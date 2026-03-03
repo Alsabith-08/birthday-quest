@@ -49,7 +49,7 @@ const App = {
     // PRESERVING YOUR MESSAGES
     messages: [
         { wish: "✨ HELLO GIRL ✨<br>You are a kind Hearted Girl in My opinion", finale: "Happy Birthday To My Closest Friend" },
-        { wish: "✨ MY ADVICE ✨<br>Good Luck For Your Board Exams", finale: "You are truly special!" },
+        { wish: "✨ MY WISH ✨<br>Good Luck For Your Board Exams", finale: "You are truly special!" },
         { wish: "✨ INNER CHILD'S ✨<br>We're just Friends',What are you sayin' ?", finale: "There was nobody that compared to you" },
         { wish: "✨ STAY HARD✨<br>I Can't find nobody else as good as you", finale: "let's find your happiness in this year!" }
     ],
@@ -82,7 +82,7 @@ const App = {
     },
 
     stage1(root) {
-        root.innerHTML = `<div class="timer-box"><svg class="clock-svg" viewBox="0 0 60 60"><circle class="clock-bg" cx="30" cy="30" r="25"></circle><circle class="clock-prog" id="clock-prog-s1" cx="30" cy="30" r="25"></circle></svg><div class="clock-num" id="clock-txt-s1">15</div></div><div id="center-count">0</div><div id="full-zone" style="position:absolute; width:100vw; height:100vh; top:0;"><div id="basket"></div></div>`;
+        root.innerHTML = `<div class="timer-box"><svg class="clock-svg" viewBox="0 0 60 60"><h3>Move a basket to collect </h3><circle class="clock-bg" cx="30" cy="30" r="25"></circle><circle class="clock-prog" id="clock-prog-s1" cx="30" cy="30" r="25"></circle></svg><div class="clock-num" id="clock-txt-s1">15</div></div><div id="center-count">0</div><div id="full-zone" style="position:absolute; width:100vw; height:100vh; top:0;"><div id="basket"></div></div>`;
         const basket = document.getElementById('basket'), prog = document.getElementById('clock-prog-s1'), txt = document.getElementById('clock-txt-s1'), countEl = document.getElementById('center-count');
         const move = (e) => { const x = (e.touches ? e.touches[0].clientX : e.clientX); basket.style.left = Math.max(65, Math.min(window.innerWidth - 65, x)) + "px"; };
         window.addEventListener('touchmove', move, {passive: false});
@@ -170,3 +170,4 @@ App.init();
 </body>
 
 </html>
+
