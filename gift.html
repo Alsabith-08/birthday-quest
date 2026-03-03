@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Birthday Quest for HAFSA</title>
+    <style>
+        :root { --primary: #ff85a1; --secondary: #fce4ec; --accent: #d4af37; --choco: #5d4037; --text: #4a4a4a; --black: #000000; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif; background: var(--secondary); overflow: hidden; touch-action: none; }
+        #app { width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
+        
+        .card { width: 85%; max-width: 400px; height: 75vh; background: white; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); padding: 25px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; position: relative; z-index: 10; }
+
+        .timer-box { position: absolute; top: 20px; right: 20px; width: 60px; height: 60px; z-index: 3000; border-radius: 50%; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .clock-svg { transform: rotate(-90deg); width: 60px; height: 60px; }
+        .clock-bg { fill: none; stroke: rgba(0,0,0,0.1); stroke-width: 5; }
+        .clock-prog { fill: none; stroke: var(--primary); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 157; stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear; }
+        .clock-num { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-family: monospace; font-size: 1.1rem; color: var(--black); }
+
+        #center-count { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 8rem; font-weight: 900; color: rgba(255, 133, 161, 0.2); pointer-events: none; z-index: 1; }
+        #basket { width: 120px; height: 85px; background: linear-gradient(135deg, #fff9c4, #ffd700); border: 3px solid #b8860b; border-radius: 5px 5px 45px 45px; position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 100; }
+        
+        #scratch-box { position: relative; width: 280px; height: 170px; border-radius: 20px; overflow: hidden; border: 3px solid var(--accent); background: white; }
+        #scratch-text { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--primary); font-weight: bold; padding: 15px; box-sizing: border-box; z-index: 5; }
+        #scratch-canvas { position: absolute; top: 0; left: 0; z-index: 50; touch-action: none; }
+
+        #midnight-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: black; z-index: 2000; overflow: hidden; }
+        #score-board { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 320px; background: white; border-radius: 25px; padding: 30px; z-index: 4000; box-shadow: 0 0 100px rgba(0,0,0,0.5); border: 4px solid var(--accent); text-align: center; }
+
+        .btn-yes { background: var(--primary); color: white; border: none; padding: 18px 45px; border-radius: 50px; font-weight: bold; cursor: pointer; }
+        .balloon { width: 100px; height: 130px; background: var(--primary); border-radius: 50% / 40% 40% 60% 60%; position: relative; animation: sway 3s infinite ease-in-out; }
+        @keyframes sway { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg) translateY(-10px); } }
+    </style>
+</head>
+<body>
+
+<div id="app"></div>
+<div id="midnight-overlay"></div>
+
+<div id="score-board">
+    <h2 style="color:var(--choco); margin-top:0;">YOUR SCORE</h2>
+    <p>Stage 1: <strong><span id="f-choco">0</span> Chocolates</strong></p>
+    <p>Stage 4: <strong><span id="f-hearts">0</span> Magic Hearts</strong></p>
+    <button class="btn-yes" id="final-replay-btn">REPLAY QUEST</button>
+</div>
+
+<script>
+const App = {
+    // PRESERVING YOUR MESSAGES
+    messages: [
+        { wish: "✨ HELLO GIRL ✨<br>You are a kind Hearted Girl in My opinion", finale: "Happy Birthday To My Closest Friend" },
+        { wish: "✨ MY ADVICE ✨<br>Good Luck For Your Board Exams", finale: "You are truly special!" },
+        { wish: "✨ INNER CHILD'S ✨<br>We're just Friends',What are you sayin' ?", finale: "There was nobody that compared to you" },
+        { wish: "✨ STAY HARD✨<br>I Can't find nobody else as good as you", finale: "let's find your happiness in this year!" }
+    ],
+
+    state: { 
+        level: 0, 
+        chocoCount: 0, 
+        heartCount: 0, 
+        msgIndex: parseInt(localStorage.getItem('hbd_msg_index')) || 0 
+    },
+
+    init() { this.render(); },
+
+    render() {
+        const root = document.getElementById('app');
+        root.innerHTML = ''; 
+        const levels = [this.stage0, this.stage1, this.stage2, this.stage3, this.stage4, this.stage5];
+        levels[this.state.level].call(this, root);
+    },
+
+    stage0(root) {
+        root.innerHTML = `<div class="card"><div class="stage-header" style="color:var(--accent); font-weight:bold; letter-spacing:2px;">STAGE 0</div><h2>Birthday Quest</h2><p id="msg0">Do you want to play this game?</p><div style="display:flex; gap:25px; align-items:center; justify-content:center; margin-top:20px;"><button class="btn-yes" onclick="App.next()">YES</button><div style="position:relative; width:110px; height:50px; cursor:pointer;" onclick="App.shatterNo()"><div id="no-solid" style="position:absolute; width:100%; height:100%; background:var(--choco); color:white; display:flex; align-items:center; justify-content:center; font-weight:bold; border-radius:12px; z-index:30;">NO</div><div id="nlp" style="position:absolute; width:50%; height:100%; background:var(--black); color:white; display:flex; align-items:center; justify-content:center; font-weight:bold; opacity:0; z-index:20; transition:transform 2.8s, opacity 0.1s; border-radius:10px 0 0 10px; clip-path:polygon(0 0, 100% 0, 75% 50%, 100% 100%, 0 100%);">N</div><div id="orp" style="position:absolute; right:0; width:50%; height:100%; background:var(--black); color:white; display:flex; align-items:center; justify-content:center; font-weight:bold; opacity:0; z-index:20; transition:transform 2.8s, opacity 0.1s; border-radius:0 10px 10px 0; clip-path:polygon(25% 0, 100% 0, 100% 100%, 25% 100%, 0 50%);">O</div></div></div></div>`;
+    },
+
+    shatterNo() {
+        document.getElementById('no-solid').style.display = 'none';
+        const l = document.getElementById('nlp'), r = document.getElementById('orp');
+        l.style.opacity = r.style.opacity = '1';
+        setTimeout(() => { l.style.transform = 'translateY(85vh) rotate(-35deg)'; r.style.transform = 'translateY(85vh) rotate(35deg)'; document.getElementById('msg0').innerText = "Good choice is YES! 😉"; }, 50);
+    },
+
+    stage1(root) {
+        root.innerHTML = `<div class="timer-box"><svg class="clock-svg" viewBox="0 0 60 60"><circle class="clock-bg" cx="30" cy="30" r="25"></circle><circle class="clock-prog" id="clock-prog-s1" cx="30" cy="30" r="25"></circle></svg><div class="clock-num" id="clock-txt-s1">15</div></div><div id="center-count">0</div><div id="full-zone" style="position:absolute; width:100vw; height:100vh; top:0;"><div id="basket"></div></div>`;
+        const basket = document.getElementById('basket'), prog = document.getElementById('clock-prog-s1'), txt = document.getElementById('clock-txt-s1'), countEl = document.getElementById('center-count');
+        const move = (e) => { const x = (e.touches ? e.touches[0].clientX : e.clientX); basket.style.left = Math.max(65, Math.min(window.innerWidth - 65, x)) + "px"; };
+        window.addEventListener('touchmove', move, {passive: false});
+        let timeLeft = 15;
+        const clock = setInterval(() => {
+            timeLeft--; txt.innerText = timeLeft;
+            prog.style.strokeDashoffset = 157 - (timeLeft / 15) * 157;
+            if (timeLeft <= 3) prog.style.stroke = "#ff0000";
+            if (timeLeft <= 0) { clearInterval(clock); window.removeEventListener('touchmove', move); this.next(); }
+        }, 1000);
+        const spawn = setInterval(() => {
+            if (this.state.level !== 1) return clearInterval(spawn);
+            for(let i=0; i<3; i++) {
+                const c = document.createElement('div'); c.style.cssText = `position:absolute; left:${Math.random()*85+5}vw; top:-60px; font-size:3rem;`; c.innerText = "🤎";
+                document.getElementById('full-zone').appendChild(c);
+                let t = -60;
+                const fall = setInterval(() => {
+                    t += 5; c.style.top = t + "px"; const bR = basket.getBoundingClientRect(), cR = c.getBoundingClientRect();
+                    if (cR.bottom >= bR.top + 20 && cR.left >= bR.left && cR.right <= bR.right) { this.state.chocoCount++; countEl.innerText = this.state.chocoCount; c.remove(); clearInterval(fall); }
+                    if (t > window.innerHeight) { c.remove(); clearInterval(fall); }
+                }, 20);
+            }
+        }, 800);
+    },
+
+    stage2(root) {
+        root.innerHTML = `<div class="card"><div class="stage-header">STAGE 2</div><h3>Pop the Surprise</h3><div class="balloon" id="btarg" style="margin:20px auto;"><div style="width:2px; height:60px; background:#aaa; position:absolute; bottom:-65px; left:50%;"></div></div><p style="margin-top:70px;">Tap the balloon!</p></div>`;
+        document.getElementById('btarg').onclick = () => { document.querySelector('.card').innerHTML = `<div class="stage-header">STAGE 2</div><h1 style="color:var(--accent); font-size:3.5rem; margin:0;">MARCH-04</h1><p style="font-weight:bold; margin:15px 0;">"What kind a dress you're wearing today ?"</p><button class="btn-yes" onclick="App.next()">CONTINUE</button>`; };
+    },
+
+    stage3(root) {
+        const currentData = this.messages[this.state.msgIndex];
+        root.innerHTML = `<div class="card"><div class="stage-header">STAGE 3</div><h3>The Hidden Wish</h3><div id="scratch-box"><div id="scratch-text">${currentData.wish}</div><canvas id="scratch-canvas"></canvas></div><div id="bhold" style="height:60px; margin-top:20px;"></div></div>`;
+        const canvas = document.getElementById('scratch-canvas'), ctx = canvas.getContext('2d');
+        canvas.width = 280; canvas.height = 170; ctx.fillStyle = '#C0C0C0'; ctx.fillRect(0,0,280,170);
+        ctx.globalCompositeOperation = 'destination-out';
+        const rub = (e) => { e.preventDefault(); const rect = canvas.getBoundingClientRect(); const touch = e.touches ? e.touches[0] : e; ctx.beginPath(); ctx.arc(touch.clientX - rect.left, touch.clientY - rect.top, 35, 0, Math.PI*2); ctx.fill(); if (!document.getElementById('fbtn')) { const b = document.createElement('button'); b.id = 'fbtn'; b.className = 'btn-yes'; b.innerText = "NEXT STAGE"; b.onclick = () => this.next(); document.getElementById('bhold').appendChild(b); } };
+        canvas.addEventListener('touchstart', rub); canvas.addEventListener('touchmove', rub);
+    },
+
+    stage4(root) {
+        root.innerHTML = `<div class="card"><h3>Make a Wish</h3><div style="font-size:6rem; position:relative;" onclick="App.handleCake()"><div id="fl" style="display:none; position:absolute; top:-15px; left:50%; transform:translateX(-50%); font-size:2rem;">🔥</div>🎂</div><p id="cmsg">Tap the cake to light it!</p></div>`;
+    },
+
+    handleCake() { const f = document.getElementById('fl'); if (f.style.display === 'block') this.runMidnight(); else { f.style.display = 'block'; document.getElementById('cmsg').innerText = "Make a wish and blow it out!"; } },
+
+    runMidnight() {
+        const overlay = document.getElementById('midnight-overlay'); overlay.style.display = 'block';
+        overlay.innerHTML = `<div class="timer-box"><svg class="clock-svg" viewBox="0 0 60 60"><circle class="clock-bg" cx="30" cy="30" r="25" stroke="white" stroke-width="2" fill="none"></circle></svg><div class="clock-num" id="clock-txt-s4" style="color:black;">10</div></div><div style="color:white; position:absolute; top:100px; width:100%; text-align:center; font-weight:bold;">TAP ALL HEARTS!</div>`;
+        let timeLeft = 10; const colors = ['💙', '💚', '💛', '💜', '🧡'];
+        const challenge = setInterval(() => {
+            if (this.state.level !== 4) return clearInterval(challenge);
+            const h = document.createElement('div'); h.style.cssText = `position:absolute; left:${Math.random()*85+5}vw; top:-50px; font-size:2.5rem; cursor:pointer; pointer-events:auto; z-index:2100;`;
+            const isWhite = Math.random() < 0.4; h.innerHTML = isWhite ? '🤍' : colors[Math.floor(Math.random()*colors.length)];
+            overlay.appendChild(h);
+            h.onclick = h.ontouchstart = (e) => { e.stopPropagation(); if (isWhite) { h.innerHTML = '❤️'; } else { this.state.heartCount++; h.remove(); } };
+            let t = -50; const speed = isWhite ? 4 : 6;
+            const drop = setInterval(() => { t += speed; h.style.top = t + "px"; if (t > window.innerHeight) { h.remove(); clearInterval(drop); } }, 20);
+            if (timeLeft <= 0) { clearInterval(challenge); overlay.style.display = 'none'; this.next(); }
+        }, 600);
+        const count = setInterval(() => { timeLeft--; const tTxt = document.getElementById('clock-txt-s4'); if(tTxt) tTxt.innerText = timeLeft; if (timeLeft <= 0) clearInterval(count); }, 1000);
+    },
+
+    stage5(root) {
+        const currentData = this.messages[this.state.msgIndex];
+        root.innerHTML = `<div class="card"><p style="color:var(--accent); letter-spacing:5px; font-weight:bold;">WISH YOU MANY MORE</p><h1 style="color:var(--primary); font-size:3rem; font-weight:900;">HAPPY<br>BIRTHDAY!</h1><p>${currentData.finale}</p><button class="btn-yes" onclick="App.showScores()">PLAY AGAIN ✨</button></div>`;
+    },
+
+    showScores() { 
+        document.getElementById('f-choco').innerText = this.state.chocoCount; 
+        document.getElementById('f-hearts').innerText = this.state.heartCount; 
+        document.getElementById('score-board').style.display = 'block';
+        // FIXED: REPLAY LOGIC
+        document.getElementById('final-replay-btn').onclick = () => {
+            let nextIndex = (this.state.msgIndex + 1) % this.messages.length;
+            localStorage.setItem('hbd_msg_index', nextIndex);
+            location.reload();
+        };
+    },
+
+    next() { this.state.level++; this.render(); }
+};
+App.init();
+</script>
+</body>
+</html>
